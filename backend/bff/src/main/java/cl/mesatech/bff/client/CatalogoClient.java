@@ -10,11 +10,12 @@ import org.springframework.web.client.RestClient;
 @Component
 public class CatalogoClient {
 
-    private static final ParameterizedTypeReference<Map<String, Object>> MAP = new ParameterizedTypeReference<>() {};
+    private static final ParameterizedTypeReference<Map<String, Object>> MAP = new ParameterizedTypeReference<>() {
+    };
 
     private final RestClient rc;
 
-    public CatalogoClient(@Qualifier("catalogoClient") RestClient rc) {
+    public CatalogoClient(@Qualifier("catalogoRestClient") RestClient rc) {
         this.rc = rc;
     }
 
@@ -27,18 +28,19 @@ public class CatalogoClient {
     }
 
     public Map<String, Object> prioridad(Long id) {
-        return DownstreamCaller.call(() -> rc.get().uri("/internal/catalogo/prioridades/{id}", id).retrieve().body(MAP));
+        return DownstreamCaller
+                .call(() -> rc.get().uri("/internal/catalogo/prioridades/{id}", id).retrieve().body(MAP));
     }
 
     /** recurso: "categorias" | "prioridades" */
     public Object crear(String recurso, Object body) {
-        return DownstreamCaller.call(() ->
-                rc.post().uri("/internal/catalogo/{r}", recurso).body(body).retrieve().body(Object.class));
+        return DownstreamCaller
+                .call(() -> rc.post().uri("/internal/catalogo/{r}", recurso).body(body).retrieve().body(Object.class));
     }
 
     public Object actualizar(String recurso, Long id, Object body) {
-        return DownstreamCaller.call(() ->
-                rc.put().uri("/internal/catalogo/{r}/{id}", recurso, id).body(body).retrieve().body(Object.class));
+        return DownstreamCaller.call(() -> rc.put().uri("/internal/catalogo/{r}/{id}", recurso, id).body(body)
+                .retrieve().body(Object.class));
     }
 
     public void eliminar(String recurso, Long id) {

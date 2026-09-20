@@ -11,22 +11,30 @@ public class SolicitudesClient {
 
     private final RestClient rc;
 
-    public SolicitudesClient(@Qualifier("solicitudesClient") RestClient rc) {
+    public SolicitudesClient(@Qualifier("solicitudesRestClient") RestClient rc) {
         this.rc = rc;
     }
 
     public Object crear(Map<String, Object> body) {
-        return DownstreamCaller.call(() ->
-                rc.post().uri("/internal/solicitudes").body(body).retrieve().body(Object.class));
+        return DownstreamCaller
+                .call(() -> rc.post().uri("/internal/solicitudes").body(body).retrieve().body(Object.class));
     }
 
-    public Object todas() { return get("/internal/solicitudes"); }
+    public Object todas() {
+        return get("/internal/solicitudes");
+    }
 
-    public Object deSolicitante(String id) { return get("/internal/solicitudes/solicitante/{id}", id); }
+    public Object deSolicitante(String id) {
+        return get("/internal/solicitudes/solicitante/{id}", id);
+    }
 
-    public Object disponibles() { return get("/internal/solicitudes/disponibles"); }
+    public Object disponibles() {
+        return get("/internal/solicitudes/disponibles");
+    }
 
-    public Object deOperador(String id) { return get("/internal/solicitudes/operador/{id}", id); }
+    public Object deOperador(String id) {
+        return get("/internal/solicitudes/operador/{id}", id);
+    }
 
     public Object asignar(Long id, Map<String, Object> body) {
         return patch("/internal/solicitudes/{id}/asignacion", id, body);
@@ -37,8 +45,8 @@ public class SolicitudesClient {
     }
 
     public Object atencion(Long id, Map<String, Object> body) {
-        return DownstreamCaller.call(() ->
-                rc.post().uri("/internal/solicitudes/{id}/atenciones", id).body(body).retrieve().body(Object.class));
+        return DownstreamCaller.call(() -> rc.post().uri("/internal/solicitudes/{id}/atenciones", id).body(body)
+                .retrieve().body(Object.class));
     }
 
     private Object get(String uri, Object... vars) {
