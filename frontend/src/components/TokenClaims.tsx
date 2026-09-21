@@ -4,12 +4,16 @@ function TokenClaims() {
     const { claims } = useAuth();
 
     if (!claims) {
-        return <p>Cargando datos del token...</p>;
+        return (
+            <section className="panel">
+                <p className="vacio">Cargando datos del token...</p>
+            </section>
+        );
     }
 
     const expiracion =
         typeof claims.exp === "number"
-            ? new Date(claims.exp * 1000).toLocaleString()
+            ? new Date(claims.exp * 1000).toLocaleString("es-CL")
             : "-";
 
     const filas: [string, string][] = [
@@ -22,19 +26,24 @@ function TokenClaims() {
     ];
 
     return (
-        <div style={{ marginTop: 24 }}>
-            <h2>Claims del token</h2>
-            <table style={{ borderCollapse: "collapse" }}>
-                <tbody>
-                {filas.map(([nombre, valor]) => (
-                    <tr key={nombre}>
-                        <td style={{ padding: "4px 12px", fontWeight: "bold" }}>{nombre}</td>
-                        <td style={{ padding: "4px 12px" }}>{valor}</td>
-                    </tr>
-                ))}
-                </tbody>
-            </table>
-        </div>
+        <section className="panel">
+            <div className="encabezado-seccion">
+                <h3>Claims del token</h3>
+                <span className="contador">Datos de tu sesión en Entra ID</span>
+            </div>
+            <div className="tabla-scroll">
+                <table className="tabla claims">
+                    <tbody>
+                    {filas.map(([nombre, valor]) => (
+                        <tr key={nombre}>
+                            <td>{nombre}</td>
+                            <td>{valor}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     );
 }
 

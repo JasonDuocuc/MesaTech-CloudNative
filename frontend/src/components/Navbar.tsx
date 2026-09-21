@@ -1,29 +1,26 @@
 import { useMsal } from "@azure/msal-react";
 import { useAuth } from "../hooks/useAuth";
 
+const NOMBRE_ROL: Record<string, string> = {
+    ROLE_CLIENTE: "Cliente",
+    ROLE_OPERADOR: "Operador",
+    ROLE_ADMINISTRADOR: "Administrador",
+};
+
 function Navbar() {
     const { instance } = useMsal();
     const { nombre, usuario, roles } = useAuth();
+    const rol = roles.map((r) => NOMBRE_ROL[r] ?? r).join(", ");
 
     return (
-        <nav
-            style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "12px 24px",
-                background: "#1f2937",
-                color: "white",
-            }}
-        >
-            <strong>MesaTech Cloud</strong>
-            <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-        <span>
-          {nombre ?? usuario} ({roles.join(", ") || "..."})
-        </span>
+        <header className="barra">
+            <span className="barra-marca">MesaTech Cloud</span>
+            <div className="barra-usuario">
+                <span>{nombre ?? usuario}</span>
+                {rol && <span className="barra-rol">{rol}</span>}
                 <button onClick={() => instance.logoutRedirect()}>Cerrar sesión</button>
             </div>
-        </nav>
+        </header>
     );
 }
 

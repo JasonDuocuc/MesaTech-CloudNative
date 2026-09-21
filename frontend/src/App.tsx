@@ -15,14 +15,23 @@ function App() {
     instance.loginRedirect(loginRequest);
   };
 
-  if (!estaAutenticado) {
-    return (
-        <div style={{ padding: 24 }}>
-          <h1>MesaTech Cloud</h1>
-          <button onClick={iniciarSesion}>Iniciar sesión</button>
-        </div>
-    );
-  }
+    if (!estaAutenticado) {
+        return (
+            <main className="login">
+                <section className="login-marca">
+                    <h1>MesaTech Cloud</h1>
+                    <p>Gestiona tus solicitudes de soporte técnico en un solo lugar.</p>
+                </section>
+                <section className="login-acceso">
+                    <h2>Bienvenido</h2>
+                    <p>Inicia sesión con tu cuenta de MesaTech para continuar.</p>
+                    <button className="btn-primario btn-grande" onClick={iniciarSesion}>
+                        Iniciar sesión con Microsoft
+                    </button>
+                </section>
+            </main>
+        );
+    }
 
   let pagina;
   if (roles.includes("ROLE_ADMINISTRADOR")) {
@@ -38,10 +47,10 @@ function App() {
   return (
       <div>
         <Navbar />
-        <div style={{ padding: 24 }}>
-          {pagina}
-          <TokenClaims />
-        </div>
+          <main className="contenedor">
+              {pagina}
+              <TokenClaims />
+          </main>
       </div>
   );
 }

@@ -1,18 +1,29 @@
 import { useEffect, useState } from "react";
 import { listarSolicitudes, cambiarEstado } from "../api/solicitudesApi";
+import { legible, fechaCorta } from "../utils/formato";
 import type { Solicitud, EstadoSolicitud } from "../types/models";
 
-const SIGUIENTE_ESTADO: Partial<Record<EstadoSolicitud, EstadoSolicitud>> = {
-    CREADA: "ASIGNADA",
-    ASIGNADA: "EN_PROCESO",
-    EN_PROCESO: "RESUELTA",
-    RESUELTA: "CERRADA",
+const SIGUIENTE: Partial<Record<EstadoSolicitud, { estado: EstadoSolicitud; texto: string }>> = {
+    CREADA: { estado: "ASIGNADA", texto: "Asignar" },
+    ASIGNADA: { estado: "EN_PROCESO", texto: "Iniciar" },
+    EN_PROCESO: { estado: "RESUELTA", texto: "Marcar resuelta" },
+    RESUELTA: { estado: "CERRADA", texto: "Cerrar" },
 };
+
+const ESTADOS: EstadoSolicitud[] = [
+    "CREADA",
+    "ASIGNADA",
+    "EN_PROCESO",
+    "RESUELTA",
+    "CERRADA",
+    "CANCELADA",
+];
 
 function OperadorPage() {
     const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [filtro, setFiltro] = useState<EstadoSolicitud | "TODAS">("TODAS");
 
     useEffect(() => {
         listarSolicitudes()
@@ -29,57 +40,100 @@ function OperadorPage() {
                 anteriores.map((s) => (s.id === actualizada.id ? actualizada : s))
             );
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Error al cambiar el estado");
+            setError(e instanceof Error ? e.message : "No se pudo cambiar el estado.");
         }
     }
 
+    const visibles =
+        filtro === "TODAS" ? solicitudes : solicitudes.filter((s) => s.estado === filtro);
+
     return (
         <div>
-            <h2>Panel del Operador</h2>
+            <h2>Solicitudes de soporte</h2>
 
-            {error && <p style={{ color: "tomato" }}>{error}</p>}
+            {error && <p className="mensaje-error">{error}</p>}
 
-            {cargando ? (
-                <p>Cargando...</p>
-            ) : solicitudes.length === 0 ? (
-                <p>No hay solicitudes.</p>
-            ) : (
-                <table style={{ borderCollapse: "collapse" }}>
-                    <thead>
-                    <tr>
-                        <th style={{ padding: "4px 12px" }}>Título</th>
-                        <th style={{ padding: "4px 12px" }}>Solicitante</th>
-                        <th style={{ padding: "4px 12px" }}>Prioridad</th>
-                        <th style={{ padding: "4px 12px" }}>Estado</th>
-                        <th style={{ padding: "4px 12px" }}>Acciones</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {solicitudes.map((s) => {
-                        const siguiente = SIGUIENTE_ESTADO[s.estado];
-                        const puedeCancelar = s.estado === "CREADA" || s.estado === "ASIGNADA";
-                        return (
-                            <tr key={s.id}>
-                                <td style={{ padding: "4px 12px" }}>{s.titulo}</td>
-                                <td style={{ padding: "4px 12px" }}>{s.usuarioSolicitante}</td>
-                                <td style={{ padding: "4px 12px" }}>{s.prioridad}</td>
-                                <td style={{ padding: "4px 12px" }}>{s.estado}</td>
-                                <td style={{ padding: "4px 12px", display: "flex", gap: 8 }}>
-                                    {siguiente && (
-                                        <button onClick={() => avanzar(s, siguiente)}>
-                                            Pasar a {siguiente}
-                                        </button>
-                                    )}
-                                    {puedeCancelar && (
-                                        <button onClick={() => avanzar(s, "CANCELADA")}>Cancelar</button>
-                                    )}
-                                </td>
+            <section className="panel">
+                <div className="encabezado-seccion">
+                    <h3>Bandeja</h3>
+                    <select
+                        value={filtro}
+                        onChange={(e) => setFiltro(e.target.value as EstadoSolicitud | "TODAS")}
+                        aria-label="Filtrar por estado"
+                    >
+                        <option value="TODAS">Todos los estados</option>
+                        {ESTADOS.map((e) => (
+                            <option key={e} value={e}>
+                                {legible(e)}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {cargando ? (
+                    <p className="vacio">Cargando solicitudes...</p>
+                ) : visibles.length === 0 ? (
+                    <p className="vacio">No hay solicitudes con este filtro.</p>
+                ) : (
+                    <div className="tabla-scroll">
+                        <table className="tabla">
+                            <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Solicitante</th>
+                                <th>Prioridad</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
                             </tr>
-                        );
-                    })}
-                    </tbody>
-                </table>
-            )}
+                            </thead>
+                            <tbody>
+                            {visibles.map((s) => {
+                                const siguiente = SIGUIENTE[s.estado];
+                                const puedeCancelar = s.estado === "CREADA" || s.estado === "ASIGNADA";
+                                return (
+                                    <tr key={s.id}>
+                                        <td>{s.titulo}</td>
+                                        <td>{s.usuarioSolicitante}</td>
+                                        <td>
+                        <span className="badge" data-prioridad={s.prioridad}>
+                          {legible(s.prioridad)}
+                        </span>
+                                        </td>
+                                        <td>
+                        <span className="badge" data-estado={s.estado}>
+                          {legible(s.estado)}
+                        </span>
+                                        </td>
+                                        <td>{fechaCorta(s.fechaCreacion)}</td>
+                                        <td>
+                                            <div className="acciones">
+                                                {siguiente && (
+                                                    <button
+                                                        className="btn-primario"
+                                                        onClick={() => avanzar(s, siguiente.estado)}
+                                                    >
+                                                        {siguiente.texto}
+                                                    </button>
+                                                )}
+                                                {puedeCancelar && (
+                                                    <button
+                                                        className="btn-peligro"
+                                                        onClick={() => avanzar(s, "CANCELADA")}
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </section>
         </div>
     );
 }
