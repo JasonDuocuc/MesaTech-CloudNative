@@ -20,10 +20,8 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -36,38 +34,46 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(a -> a.anyRequest().hasAuthority("SCOPE_access_as_user"))
-            .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(jwtConverter())));
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(a -> a.anyRequest().hasAuthority("SCOPE_access_as_user"))
+                .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(jwtConverter())));
         return http.build();
     }
 
-    /** Conserva SCOPE_... (claim scp) y agrega ROLE_... (claim roles). */
+    /**
+     * Conserva SCOPE_... (claim scp) y agrega ROLE_... (claim roles), con o sin
+     * prefijo ROLE_.
+     */
     private Converter<Jwt, AbstractAuthenticationToken> jwtConverter() {
         JwtGrantedAuthoritiesConverter scopes = new JwtGrantedAuthoritiesConverter(); // scp -> SCOPE_
         return jwt -> {
             Collection<GrantedAuthority> authorities = new ArrayList<>(scopes.convert(jwt));
             List<String> roles = jwt.getClaimAsStringList("roles");
             if (roles != null) {
-                roles.forEach(r -> authorities.add(new SimpleGrantedAuthority("ROLE_" + r)));
+                roles.forEach(r -> {
+                    String n = r.toUpperCase();
+                    if (n.startsWith("ROLE_")) {
+                        n = n.substring(5);
+                    }
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + n));
+                });
             }
             return new JwtAuthenticationToken(jwt, authorities);
         };
     }
 
-    /** Valida firma, issuer, expiracion y audience. Es "lazy": no llama a Entra hasta el primer request. */
+    /** Valida firma (JWKS), issuer, expiracion y audience. */
     @Bean
     JwtDecoder jwtDecoder(
             @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuer,
+            @Value("${app.security.jwk-set-uri}") String jwkSetUri,
             @Value("${app.security.audience}") String audience) {
-        return new SupplierJwtDecoder(() -> {
-            NimbusJwtDecoder decoder = (NimbusJwtDecoder) JwtDecoders.fromIssuerLocation(issuer);
-            OAuth2TokenValidator<Jwt> audienceValidator = new JwtClaimValidator<List<String>>(
-                    "aud", aud -> aud != null && aud.contains(audience));
-            decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
-                    JwtValidators.createDefaultWithIssuer(issuer), audienceValidator));
-            return decoder;
-        });
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        OAuth2TokenValidator<Jwt> audienceValidator = new JwtClaimValidator<List<String>>(
+                "aud", aud -> aud != null && aud.contains(audience));
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefaultWithIssuer(issuer), audienceValidator));
+        return decoder;
     }
 }

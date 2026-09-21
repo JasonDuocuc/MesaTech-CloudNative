@@ -9,10 +9,15 @@ public record CurrentUser(String id, String nombre, String email) {
         if (id == null) {
             id = jwt.getSubject();
         }
+
         String email = jwt.getClaimAsString("email");
-        if (email == null) {
+        if (email == null)
             email = jwt.getClaimAsString("preferred_username");
-        }
+        if (email == null)
+            email = jwt.getClaimAsString("upn");
+        if (email == null)
+            email = jwt.getClaimAsString("unique_name");
+
         return new CurrentUser(id, jwt.getClaimAsString("name"), email);
     }
 }
