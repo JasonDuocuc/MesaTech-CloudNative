@@ -10,7 +10,32 @@ function decodificarToken(token: string): Claims {
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
     return JSON.parse(atob(base64));
 }
+export interface Identidad {
+    id: string;
+    nombre: string;
+    email: string;
+}
 
+function extraerIdentidad(
+    claims: Claims | null,
+    nombreCuenta: string | null,
+    usuarioCuenta: string | null
+): Identidad | null {
+    if (!claims) return null;
+    const texto = (v: unknown) => (typeof v === "string" && v ? v : null);
+    const id = texto(claims.oid) ?? texto(claims.sub);
+    if (!id) return null;
+    return {
+        id,
+        nombre: texto(claims.name) ?? nombreCuenta ?? usuarioCuenta ?? id,
+        email:
+            texto(claims.upn) ??
+            texto(claims.preferred_username) ??
+            texto(claims.email) ??
+            usuarioCuenta ??
+            "",
+    };
+}
 export function useAuth() {
     const { instance, accounts } = useMsal();
     const estaAutenticado = useIsAuthenticated();
@@ -49,6 +74,11 @@ export function useAuth() {
         usuario: accounts[0]?.username ?? null,
         nombre: accounts[0]?.name ?? null,
         roles,
+        identidad: extraerIdentidad(
+            claims,
+            accounts[0]?.name ?? null,
+            accounts[0]?.username ?? null
+        ),
         claims,
     };
 }

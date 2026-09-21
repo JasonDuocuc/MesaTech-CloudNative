@@ -5,7 +5,7 @@ import {
     actualizarItem,
     eliminarItem,
 } from "../api/catalogoApi";
-import { listarSolicitudes } from "../api/solicitudesApi";
+import { listarSolicitudes } from "../api/solicitudesMock";
 import { legible, fechaCorta } from "../utils/formato";
 import type { Categoria, Prioridad } from "../types/dto";
 import type { Solicitud } from "../types/models"; // temporal, hasta migrar solicitudes

@@ -1,42 +1,72 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { listarSolicitudes, crearSolicitud } from "../api/solicitudesApi";
+import { obtenerCatalogo } from "../api/catalogoApi";
+import { crearSolicitud, listarPorSolicitante } from "../api/solicitudesApi";
 import { legible, fechaCorta } from "../utils/formato";
-import type { Solicitud, Prioridad } from "../types/models";
+import type { Categoria, Prioridad, Solicitud } from "../types/dto";
 
 function ClientePage() {
-    const { usuario } = useAuth();
-    const miUsuario = usuario?.split("@")[0] ?? "";
+    const { identidad } = useAuth();
+    const idUsuario = identidad?.id;
 
+    const [categorias, setCategorias] = useState<Categoria[]>([]);
+    const [prioridades, setPrioridades] = useState<Prioridad[]>([]);
     const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
-    const [cargando, setCargando] = useState(true);
+    const [cargandoCatalogo, setCargandoCatalogo] = useState(true);
+    const [cargandoLista, setCargandoLista] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [exito, setExito] = useState<string | null>(null);
 
     const [titulo, setTitulo] = useState("");
     const [descripcion, setDescripcion] = useState("");
-    const [categoria, setCategoria] = useState("Accesos");
-    const [prioridad, setPrioridad] = useState<Prioridad>("MEDIA");
+    const [categoriaId, setCategoriaId] = useState("");
+    const [prioridadId, setPrioridadId] = useState("");
 
     useEffect(() => {
-        listarSolicitudes()
+        obtenerCatalogo()
+            .then((c) => {
+                setCategorias(c.categorias);
+                setPrioridades(c.prioridades);
+                setCategoriaId(c.categorias[0] ? String(c.categorias[0].id) : "");
+                setPrioridadId(c.prioridades[0] ? String(c.prioridades[0].id) : "");
+            })
+            .catch((e) => setError(e.message))
+            .finally(() => setCargandoCatalogo(false));
+    }, []);
+
+    useEffect(() => {
+        if (!idUsuario) return;
+        listarPorSolicitante(idUsuario)
             .then(setSolicitudes)
             .catch((e) => setError(e.message))
-            .finally(() => setCargando(false));
-    }, []);
+            .finally(() => setCargandoLista(false));
+    }, [idUsuario]);
 
     async function enviar() {
         setExito(null);
-        if (!titulo.trim() || !descripcion.trim()) {
-            setError("Completa el título y la descripción para crear la solicitud.");
+        if (!identidad) {
+            setError("Todavía se está cargando tu sesión. Intenta de nuevo en un momento.");
+            return;
+        }
+        const categoria = categorias.find((c) => String(c.id) === categoriaId);
+        const prioridad = prioridades.find((p) => String(p.id) === prioridadId);
+        if (!titulo.trim() || !descripcion.trim() || !categoria || !prioridad) {
+            setError("Completa el título, la descripción, la categoría y la prioridad.");
             return;
         }
         try {
             setError(null);
-            const nueva = await crearSolicitud(
-                { titulo, descripcion, categoria, prioridad },
-                miUsuario
-            );
+            const nueva = await crearSolicitud({
+                titulo: titulo.trim(),
+                descripcion: descripcion.trim(),
+                categoriaId: categoria.id,
+                categoriaNombre: categoria.nombre,
+                prioridadId: prioridad.id,
+                prioridadNombre: prioridad.nombre,
+                solicitanteId: identidad.id,
+                solicitanteNombre: identidad.nombre,
+                solicitanteEmail: identidad.email,
+            });
             setSolicitudes((anteriores) => [nueva, ...anteriores]);
             setTitulo("");
             setDescripcion("");
@@ -46,7 +76,8 @@ function ClientePage() {
         }
     }
 
-    const mias = solicitudes.filter((s) => s.usuarioSolicitante === miUsuario);
+    const sinCatalogo =
+        !cargandoCatalogo && (categorias.length === 0 || prioridades.length === 0);
 
     return (
         <div>
@@ -54,11 +85,20 @@ function ClientePage() {
 
             <section className="panel">
                 <h3 style={{ marginTop: 0 }}>Nueva solicitud</h3>
+
+                {sinCatalogo && (
+                    <p className="mensaje-aviso">
+                        Todavía no hay categorías o prioridades disponibles. Pídele al
+                        administrador que las cree para poder registrar solicitudes.
+                    </p>
+                )}
+
                 <div className="formulario">
                     <label className="campo">
                         Título
                         <input
                             value={titulo}
+                            maxLength={150}
                             onChange={(e) => setTitulo(e.target.value)}
                             placeholder="Ej: No puedo entrar al correo"
                         />
@@ -67,6 +107,7 @@ function ClientePage() {
                         Descripción
                         <textarea
                             value={descripcion}
+                            maxLength={1000}
                             onChange={(e) => setDescripcion(e.target.value)}
                             placeholder="Cuéntanos qué está pasando"
                         />
@@ -74,28 +115,33 @@ function ClientePage() {
                     <div className="fila-doble">
                         <label className="campo">
                             Categoría
-                            <select value={categoria} onChange={(e) => setCategoria(e.target.value)}>
-                                <option>Accesos</option>
-                                <option>Hardware</option>
-                                <option>Software</option>
-                                <option>Redes</option>
-                                <option>Otro</option>
+                            <select
+                                value={categoriaId}
+                                onChange={(e) => setCategoriaId(e.target.value)}
+                            >
+                                {categorias.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.nombre}
+                                    </option>
+                                ))}
                             </select>
                         </label>
                         <label className="campo">
                             Prioridad
                             <select
-                                value={prioridad}
-                                onChange={(e) => setPrioridad(e.target.value as Prioridad)}
+                                value={prioridadId}
+                                onChange={(e) => setPrioridadId(e.target.value)}
                             >
-                                <option value="BAJA">Baja</option>
-                                <option value="MEDIA">Media</option>
-                                <option value="ALTA">Alta</option>
+                                {prioridades.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.nombre}
+                                    </option>
+                                ))}
                             </select>
                         </label>
                     </div>
                     <div>
-                        <button className="btn-primario" onClick={enviar}>
+                        <button className="btn-primario" onClick={enviar} disabled={sinCatalogo}>
                             Crear solicitud
                         </button>
                     </div>
@@ -107,12 +153,14 @@ function ClientePage() {
             <section className="panel">
                 <div className="encabezado-seccion">
                     <h3>Historial</h3>
-                    {!cargando && <span className="contador">{mias.length} en total</span>}
+                    {!cargandoLista && (
+                        <span className="contador">{solicitudes.length} en total</span>
+                    )}
                 </div>
 
-                {cargando ? (
+                {cargandoLista ? (
                     <p className="vacio">Cargando tus solicitudes...</p>
-                ) : mias.length === 0 ? (
+                ) : solicitudes.length === 0 ? (
                     <p className="vacio">
                         Aún no tienes solicitudes. Crea la primera con el formulario de arriba.
                     </p>
@@ -125,24 +173,24 @@ function ClientePage() {
                                 <th>Categoría</th>
                                 <th>Prioridad</th>
                                 <th>Estado</th>
+                                <th>Operador</th>
                                 <th>Fecha</th>
                             </tr>
                             </thead>
                             <tbody>
-                            {mias.map((s) => (
+                            {solicitudes.map((s) => (
                                 <tr key={s.id}>
                                     <td>{s.titulo}</td>
-                                    <td>{s.categoria}</td>
+                                    <td>{s.categoriaNombre}</td>
                                     <td>
-                      <span className="badge" data-prioridad={s.prioridad}>
-                        {legible(s.prioridad)}
-                      </span>
+                                        <span className="badge">{s.prioridadNombre}</span>
                                     </td>
                                     <td>
                       <span className="badge" data-estado={s.estado}>
                         {legible(s.estado)}
                       </span>
                                     </td>
+                                    <td>{s.operadorNombre ?? "Sin asignar"}</td>
                                     <td>{fechaCorta(s.fechaCreacion)}</td>
                                 </tr>
                             ))}

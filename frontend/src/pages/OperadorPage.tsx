@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listarSolicitudes, cambiarEstado } from "../api/solicitudesApi";
+import { listarSolicitudes, cambiarEstado } from "../api/solicitudesMock";
 import { legible, fechaCorta } from "../utils/formato";
 import type { Solicitud, EstadoSolicitud } from "../types/models";
 
