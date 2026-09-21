@@ -1,0 +1,4 @@
+
+### Local / secretos ###
+database/.env
+.vscode/
