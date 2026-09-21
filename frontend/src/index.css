@@ -371,3 +371,9 @@ select:focus-visible {
   color: #7a5200;
   font-weight: 500;
 }
+.descripcion-corta {
+  margin-top: 2px;
+  max-width: 420px;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
