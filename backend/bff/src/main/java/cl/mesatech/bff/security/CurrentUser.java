@@ -9,7 +9,6 @@ public record CurrentUser(String id, String nombre, String email) {
         if (id == null) {
             id = jwt.getSubject();
         }
-
         String email = jwt.getClaimAsString("email");
         if (email == null)
             email = jwt.getClaimAsString("preferred_username");
@@ -18,6 +17,10 @@ public record CurrentUser(String id, String nombre, String email) {
         if (email == null)
             email = jwt.getClaimAsString("unique_name");
 
-        return new CurrentUser(id, jwt.getClaimAsString("name"), email);
+        String nombre = jwt.getClaimAsString("name");
+        if (nombre == null)
+            nombre = email;
+
+        return new CurrentUser(id, nombre, email);
     }
 }
