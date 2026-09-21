@@ -21,7 +21,6 @@ public record CurrentUser(String id, String nombre, String email) {
         String nombre = jwt.getClaimAsString("name");
         if (nombre == null)
             nombre = email;
-
         return new CurrentUser(id, nombre, email);
     }
 }
