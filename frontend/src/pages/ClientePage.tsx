@@ -1,14 +1,10 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../hooks/useAuth";
 import { obtenerCatalogo } from "../api/catalogoApi";
-import { crearSolicitud, listarPorSolicitante } from "../api/solicitudesApi";
+import { crearSolicitud, listarMias } from "../api/solicitudesApi";
 import { legible, fechaCorta } from "../utils/formato";
 import type { Categoria, Prioridad, Solicitud } from "../types/dto";
 
 function ClientePage() {
-    const { identidad } = useAuth();
-    const idUsuario = identidad?.id;
-
     const [categorias, setCategorias] = useState<Categoria[]>([]);
     const [prioridades, setPrioridades] = useState<Prioridad[]>([]);
     const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
@@ -35,19 +31,14 @@ function ClientePage() {
     }, []);
 
     useEffect(() => {
-        if (!idUsuario) return;
-        listarPorSolicitante(idUsuario)
+        listarMias()
             .then(setSolicitudes)
             .catch((e) => setError(e.message))
             .finally(() => setCargandoLista(false));
-    }, [idUsuario]);
+    }, []);
 
     async function enviar() {
         setExito(null);
-        if (!identidad) {
-            setError("Todavía se está cargando tu sesión. Intenta de nuevo en un momento.");
-            return;
-        }
         const categoria = categorias.find((c) => String(c.id) === categoriaId);
         const prioridad = prioridades.find((p) => String(p.id) === prioridadId);
         if (!titulo.trim() || !descripcion.trim() || !categoria || !prioridad) {
@@ -60,12 +51,7 @@ function ClientePage() {
                 titulo: titulo.trim(),
                 descripcion: descripcion.trim(),
                 categoriaId: categoria.id,
-                categoriaNombre: categoria.nombre,
                 prioridadId: prioridad.id,
-                prioridadNombre: prioridad.nombre,
-                solicitanteId: identidad.id,
-                solicitanteNombre: identidad.nombre,
-                solicitanteEmail: identidad.email,
             });
             setSolicitudes((anteriores) => [nueva, ...anteriores]);
             setTitulo("");

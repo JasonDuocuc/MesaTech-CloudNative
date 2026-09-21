@@ -1,7 +1,7 @@
 import { http } from "./http";
 import type { CatalogoResponse, CatalogoItemRequest } from "../types/dto";
 
-const BASE = "/internal/catalogo";
+const BASE = "/v1/catalogo";
 
 export type RecursoCatalogo = "categorias" | "prioridades";
 

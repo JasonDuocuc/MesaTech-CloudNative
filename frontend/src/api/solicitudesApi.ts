@@ -2,13 +2,14 @@ import { http } from "./http";
 import type {
     Solicitud,
     CrearSolicitudRequest,
-    AsignarSolicitudRequest,
-    CrearAtencionRequest,
     Atencion,
     EstadoSolicitud,
+    MisSolicitudesV2,
 } from "../types/dto";
 
-const BASE = "/internal/solicitudes";
+const BASE = "/v1/solicitudes";
+
+// La identidad (solicitante u operador) la toma el BFF desde el JWT: no se envía en el body.
 
 export function crearSolicitud(datos: CrearSolicitudRequest): Promise<Solicitud> {
     return http<Solicitud>(BASE, { method: "POST", body: JSON.stringify(datos) });
@@ -18,26 +19,23 @@ export function listarTodas(): Promise<Solicitud[]> {
     return http<Solicitud[]>(BASE);
 }
 
-export function listarPorSolicitante(solicitanteId: string): Promise<Solicitud[]> {
-    return http<Solicitud[]>(`${BASE}/solicitante/${encodeURIComponent(solicitanteId)}`);
+// Usa la versión 2 del contrato público (GET /v2/solicitudes/mias).
+// La v1 sigue disponible en GET /v1/solicitudes/mias y devuelve la lista directa.
+export async function listarMias(): Promise<Solicitud[]> {
+    const respuesta = await http<MisSolicitudesV2>("/v2/solicitudes/mias");
+    return respuesta.solicitudes;
 }
 
 export function listarDisponibles(): Promise<Solicitud[]> {
     return http<Solicitud[]>(`${BASE}/disponibles`);
 }
 
-export function listarPorOperador(operadorId: string): Promise<Solicitud[]> {
-    return http<Solicitud[]>(`${BASE}/operador/${encodeURIComponent(operadorId)}`);
+export function listarAsignadasMias(): Promise<Solicitud[]> {
+    return http<Solicitud[]>(`${BASE}/asignadas/mias`);
 }
 
-export function asignarSolicitud(
-    id: number,
-    datos: AsignarSolicitudRequest
-): Promise<Solicitud> {
-    return http<Solicitud>(`${BASE}/${id}/asignacion`, {
-        method: "PATCH",
-        body: JSON.stringify(datos),
-    });
+export function asignarSolicitud(id: number): Promise<Solicitud> {
+    return http<Solicitud>(`${BASE}/${id}/asignacion`, { method: "PATCH" });
 }
 
 export function cambiarEstado(id: number, estado: EstadoSolicitud): Promise<Solicitud> {
@@ -47,12 +45,9 @@ export function cambiarEstado(id: number, estado: EstadoSolicitud): Promise<Soli
     });
 }
 
-export function registrarAtencion(
-    id: number,
-    datos: CrearAtencionRequest
-): Promise<Atencion> {
+export function registrarAtencion(id: number, detalle: string): Promise<Atencion> {
     return http<Atencion>(`${BASE}/${id}/atenciones`, {
         method: "POST",
-        body: JSON.stringify(datos),
+        body: JSON.stringify({ detalle }),
     });
 }

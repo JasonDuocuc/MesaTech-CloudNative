@@ -52,17 +52,7 @@ export interface CrearSolicitudRequest {
     titulo: string;
     descripcion: string;
     categoriaId: number;
-    categoriaNombre: string;
     prioridadId: number;
-    prioridadNombre: string;
-    solicitanteId: string;
-    solicitanteNombre: string;
-    solicitanteEmail: string;
-}
-
-export interface AsignarSolicitudRequest {
-    operadorId: string;
-    operadorNombre: string;
 }
 
 export interface CambiarEstadoRequest {
@@ -70,8 +60,6 @@ export interface CambiarEstadoRequest {
 }
 
 export interface CrearAtencionRequest {
-    operadorId: string;
-    operadorNombre: string;
     detalle: string;
 }
 
@@ -82,4 +70,11 @@ export interface Atencion {
     operadorNombre: string;
     detalle: string;
     fechaCreacion: string;
+}
+
+// Respuesta de GET /v2/solicitudes/mias
+export interface MisSolicitudesV2 {
+    version: string;
+    total: number;
+    solicitudes: Solicitud[];
 }

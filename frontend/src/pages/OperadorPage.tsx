@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../hooks/useAuth";
 import {
     listarDisponibles,
-    listarPorOperador,
+    listarAsignadasMias,
     asignarSolicitud,
     cambiarEstado,
     registrarAtencion,
@@ -20,9 +19,6 @@ const PUEDE_CANCELAR: EstadoSolicitud[] = ["CREADA", "ASIGNADA", "EN_PROCESO"];
 const PUEDE_ATENDER: EstadoSolicitud[] = ["ASIGNADA", "EN_PROCESO", "RESUELTA"];
 
 function OperadorPage() {
-    const { identidad } = useAuth();
-    const idOperador = identidad?.id;
-
     const [disponibles, setDisponibles] = useState<Solicitud[]>([]);
     const [mias, setMias] = useState<Solicitud[]>([]);
     const [cargandoDisponibles, setCargandoDisponibles] = useState(true);
@@ -42,12 +38,11 @@ function OperadorPage() {
     }, []);
 
     useEffect(() => {
-        if (!idOperador) return;
-        listarPorOperador(idOperador)
+        listarAsignadasMias()
             .then(setMias)
             .catch((e) => setError(e.message))
             .finally(() => setCargandoMias(false));
-    }, [idOperador]);
+    }, []);
 
     async function ejecutar(id: number, accion: () => Promise<void>) {
         setOcupadoId(id);
@@ -63,15 +58,8 @@ function OperadorPage() {
     }
 
     function asignarme(s: Solicitud) {
-        if (!identidad) {
-            setError("Todavía se está cargando tu sesión. Intenta de nuevo en un momento.");
-            return;
-        }
         ejecutar(s.id, async () => {
-            const actualizada = await asignarSolicitud(s.id, {
-                operadorId: identidad.id,
-                operadorNombre: identidad.nombre,
-            });
+            const actualizada = await asignarSolicitud(s.id);
             setDisponibles((anteriores) => anteriores.filter((x) => x.id !== s.id));
             setMias((anteriores) => [actualizada, ...anteriores]);
         });
@@ -110,18 +98,14 @@ function OperadorPage() {
     }
 
     async function guardarAtencion() {
-        if (!atendiendo || !identidad) return;
+        if (!atendiendo) return;
         if (!detalle.trim()) {
             setError("Escribe el detalle de la atención.");
             return;
         }
         const solicitud = atendiendo;
         await ejecutar(solicitud.id, async () => {
-            await registrarAtencion(solicitud.id, {
-                operadorId: identidad.id,
-                operadorNombre: identidad.nombre,
-                detalle: detalle.trim(),
-            });
+            await registrarAtencion(solicitud.id, detalle.trim());
             setAtendiendo(null);
             setDetalle("");
             setExito("Atención registrada.");
