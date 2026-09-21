@@ -5,10 +5,9 @@ import {
     actualizarItem,
     eliminarItem,
 } from "../api/catalogoApi";
-import { listarSolicitudes } from "../api/solicitudesMock";
+import { listarTodas } from "../api/solicitudesApi";
 import { legible, fechaCorta } from "../utils/formato";
-import type { Categoria, Prioridad } from "../types/dto";
-import type { Solicitud } from "../types/models"; // temporal, hasta migrar solicitudes
+import type { Categoria, Prioridad, Solicitud } from "../types/dto";
 
 interface Item {
     id: number;
@@ -159,7 +158,7 @@ function AdminPage() {
             .catch((e) => setError(e.message))
             .finally(() => setCargandoCatalogo(false));
 
-        listarSolicitudes()
+        listarTodas()
             .then(setSolicitudes)
             .catch((e) => setError(e.message))
             .finally(() => setCargandoSolicitudes(false));
@@ -273,6 +272,7 @@ function AdminPage() {
                                 <th>Categoría</th>
                                 <th>Prioridad</th>
                                 <th>Estado</th>
+                                <th>Operador</th>
                                 <th>Fecha</th>
                             </tr>
                             </thead>
@@ -280,18 +280,17 @@ function AdminPage() {
                             {solicitudes.map((s) => (
                                 <tr key={s.id}>
                                     <td>{s.titulo}</td>
-                                    <td>{s.usuarioSolicitante}</td>
-                                    <td>{s.categoria}</td>
+                                    <td>{s.solicitanteNombre}</td>
+                                    <td>{s.categoriaNombre}</td>
                                     <td>
-                      <span className="badge" data-prioridad={s.prioridad}>
-                        {legible(s.prioridad)}
-                      </span>
+                                        <span className="badge">{s.prioridadNombre}</span>
                                     </td>
                                     <td>
                       <span className="badge" data-estado={s.estado}>
                         {legible(s.estado)}
                       </span>
                                     </td>
+                                    <td>{s.operadorNombre ?? "Sin asignar"}</td>
                                     <td>{fechaCorta(s.fechaCreacion)}</td>
                                 </tr>
                             ))}

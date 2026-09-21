@@ -1,15 +1,26 @@
 import { useEffect, useState } from "react";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { apiTokenRequest } from "../auth/authConfig";
-import type { Rol } from "../types/models";
+import type { Rol } from "../types/dto";
 
 type Claims = Record<string, unknown>;
 
 function decodificarToken(token: string): Claims {
     const payload = token.split(".")[1];
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(base64));
+    const conRelleno = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const bytes = Uint8Array.from(atob(conRelleno), (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
 }
+
+function normalizarRoles(valor: unknown): Rol[] {
+    if (!Array.isArray(valor)) return [];
+    const validos: Rol[] = ["CLIENTE", "OPERADOR", "ADMINISTRADOR"];
+    return valor
+        .map((r) => String(r).replace(/^ROLE_/i, "").toUpperCase())
+        .filter((r): r is Rol => validos.includes(r as Rol));
+}
+
 export interface Identidad {
     id: string;
     nombre: string;
@@ -36,6 +47,7 @@ function extraerIdentidad(
             "",
     };
 }
+
 export function useAuth() {
     const { instance, accounts } = useMsal();
     const estaAutenticado = useIsAuthenticated();
@@ -56,7 +68,7 @@ export function useAuth() {
                 const datos = decodificarToken(respuesta.accessToken);
                 if (!cancelado) {
                     setClaims(datos);
-                    setRoles((datos.roles as Rol[]) ?? []);
+                    setRoles(normalizarRoles(datos.roles));
                 }
             } catch (error) {
                 console.error("No se pudo obtener el token:", error);
@@ -74,11 +86,11 @@ export function useAuth() {
         usuario: accounts[0]?.username ?? null,
         nombre: accounts[0]?.name ?? null,
         roles,
+        claims,
         identidad: extraerIdentidad(
             claims,
             accounts[0]?.name ?? null,
             accounts[0]?.username ?? null
         ),
-        claims,
     };
 }

@@ -8,12 +8,12 @@ import OperadorPage from "./pages/OperadorPage";
 import AdminPage from "./pages/AdminPage";
 
 function App() {
-  const { instance } = useMsal();
-  const { estaAutenticado, roles } = useAuth();
+    const { instance } = useMsal();
+    const { estaAutenticado, roles, claims } = useAuth();
 
-  const iniciarSesion = () => {
-    instance.loginRedirect(loginRequest);
-  };
+    const iniciarSesion = () => {
+        instance.loginRedirect(loginRequest);
+    };
 
     if (!estaAutenticado) {
         return (
@@ -33,26 +33,33 @@ function App() {
         );
     }
 
-  let pagina;
-  if (roles.includes("ROLE_ADMINISTRADOR")) {
-    pagina = <AdminPage />;
-  } else if (roles.includes("ROLE_OPERADOR")) {
-    pagina = <OperadorPage />;
-  } else if (roles.includes("ROLE_CLIENTE")) {
-    pagina = <ClientePage />;
-  } else {
-    pagina = <p>Cargando tu perfil...</p>;
-  }
+    let pagina;
+    if (roles.includes("ADMINISTRADOR")) {
+        pagina = <AdminPage />;
+    } else if (roles.includes("OPERADOR")) {
+        pagina = <OperadorPage />;
+    } else if (roles.includes("CLIENTE")) {
+        pagina = <ClientePage />;
+    } else if (claims) {
+        pagina = (
+            <p className="mensaje-aviso">
+                Tu cuenta no tiene un rol asignado. Pídele al administrador que te asigne
+                uno para poder usar la aplicación.
+            </p>
+        );
+    } else {
+        pagina = <p className="vacio">Cargando tu perfil...</p>;
+    }
 
-  return (
-      <div>
-        <Navbar />
-          <main className="contenedor">
-              {pagina}
-              <TokenClaims />
-          </main>
-      </div>
-  );
+    return (
+        <div>
+            <Navbar />
+            <main className="contenedor">
+                {pagina}
+                <TokenClaims />
+            </main>
+        </div>
+    );
 }
 
 export default App;

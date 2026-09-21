@@ -2,9 +2,9 @@ import { useMsal } from "@azure/msal-react";
 import { useAuth } from "../hooks/useAuth";
 
 const NOMBRE_ROL: Record<string, string> = {
-    ROLE_CLIENTE: "Cliente",
-    ROLE_OPERADOR: "Operador",
-    ROLE_ADMINISTRADOR: "Administrador",
+    CLIENTE: "Cliente",
+    OPERADOR: "Operador",
+    ADMINISTRADOR: "Administrador",
 };
 
 function Navbar() {
