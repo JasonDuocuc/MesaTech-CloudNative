@@ -363,5 +363,11 @@ select:focus-visible {
     padding: 10px 8px;
   }
 
-
+}
+.mensaje-aviso {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fdf3dc;
+  color: #7a5200;
+  font-weight: 500;
 }

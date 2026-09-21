@@ -6,5 +6,9 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: true,
+    proxy: {
+      '/internal/solicitudes': 'http://localhost:8081',
+      '/internal/catalogo': 'http://localhost:8082',
+    },
   },
 })

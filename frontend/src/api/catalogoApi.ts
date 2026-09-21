@@ -1,50 +1,35 @@
-import { apiFetch } from "./apiClient";
-import type { Catalogo } from "../types/models";
+import { http } from "./http";
+import type { CatalogoResponse, CatalogoItemRequest } from "../types/dto";
 
-// Cambiar a false cuando el backend en AWS esté listo
-const USAR_DATOS_SIMULADOS = true;
+const BASE = "/internal/catalogo";
 
-export interface NuevoItemCatalogo {
-    nombre: string;
-    descripcion: string;
+export type RecursoCatalogo = "categorias" | "prioridades";
+
+export function obtenerCatalogo(): Promise<CatalogoResponse> {
+    return http<CatalogoResponse>(BASE);
 }
 
-let catalogoSimulado: Catalogo[] = [
-    { id: 1, nombre: "Accesos", descripcion: "Problemas de contraseñas y permisos" },
-    { id: 2, nombre: "Hardware", descripcion: "Equipos, impresoras y periféricos" },
-    { id: 3, nombre: "Software", descripcion: "Instalación y errores de programas" },
-];
-
-const pausa = () => new Promise((resolver) => setTimeout(resolver, 300));
-
-export async function listarCatalogo(): Promise<Catalogo[]> {
-    if (USAR_DATOS_SIMULADOS) {
-        await pausa();
-        return [...catalogoSimulado];
-    }
-    return apiFetch<Catalogo[]>("/v1/catalogo");
-}
-
-export async function crearItemCatalogo(
-    datos: NuevoItemCatalogo
-): Promise<Catalogo> {
-    if (USAR_DATOS_SIMULADOS) {
-        await pausa();
-        const nuevo: Catalogo = { ...datos, id: Date.now() };
-        catalogoSimulado = [...catalogoSimulado, nuevo];
-        return nuevo;
-    }
-    return apiFetch<Catalogo>("/v1/catalogo", {
+export function crearItem<T>(
+    recurso: RecursoCatalogo,
+    datos: CatalogoItemRequest
+): Promise<T> {
+    return http<T>(`${BASE}/${recurso}`, {
         method: "POST",
         body: JSON.stringify(datos),
     });
 }
 
-export async function eliminarItemCatalogo(id: number): Promise<void> {
-    if (USAR_DATOS_SIMULADOS) {
-        await pausa();
-        catalogoSimulado = catalogoSimulado.filter((c) => c.id !== id);
-        return;
-    }
-    await apiFetch<void>(`/v1/catalogo/${id}`, { method: "DELETE" });
+export function actualizarItem<T>(
+    recurso: RecursoCatalogo,
+    id: number,
+    datos: CatalogoItemRequest
+): Promise<T> {
+    return http<T>(`${BASE}/${recurso}/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(datos),
+    });
+}
+
+export function eliminarItem(recurso: RecursoCatalogo, id: number): Promise<void> {
+    return http<void>(`${BASE}/${recurso}/${id}`, { method: "DELETE" });
 }
