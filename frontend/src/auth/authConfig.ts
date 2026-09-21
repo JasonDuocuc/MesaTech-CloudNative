@@ -1,15 +1,29 @@
 import { type Configuration, LogLevel } from "@azure/msal-browser";
 
-const FRONTEND_CLIENT_ID = "625a158e-2d47-47cb-9729-8cda1ab10940";
-const TENANT_ID = "b1505d07-62a1-4611-a819-1a97141f1284";
-const API_CLIENT_ID = "1dfc072d-b46e-46b1-84b5-03a59cc145b0";
+// Los IDs de Entra ID se leen desde variables de entorno (.env.local, no versionado).
+// Copia .env.example a .env.local y completa los valores de tu tenant.
+function requerida(nombre: string): string {
+    const valor = import.meta.env[nombre] as string | undefined;
+    if (!valor) {
+        throw new Error(
+            `Falta la variable ${nombre}. Copia .env.example a .env.local y completa los valores.`
+        );
+    }
+    return valor;
+}
+
+const FRONTEND_CLIENT_ID = requerida("VITE_FRONTEND_CLIENT_ID");
+const TENANT_ID = requerida("VITE_TENANT_ID");
+const API_CLIENT_ID = requerida("VITE_API_CLIENT_ID");
+const REDIRECT_URI =
+    (import.meta.env.VITE_REDIRECT_URI as string | undefined) ?? "http://localhost:3000";
 
 export const msalConfig: Configuration = {
     auth: {
         clientId: FRONTEND_CLIENT_ID,
         authority: `https://login.microsoftonline.com/${TENANT_ID}`,
-        redirectUri: "http://localhost:3000",
-        postLogoutRedirectUri: "http://localhost:3000",
+        redirectUri: REDIRECT_URI,
+        postLogoutRedirectUri: REDIRECT_URI,
     },
     cache: {
         cacheLocation: "sessionStorage",
@@ -31,13 +45,9 @@ export const msalConfig: Configuration = {
     },
 };
 
+// Scope acordado en el contrato de integración: el BFF exige SCOPE_access_as_user.
 export const loginRequest = {
-    scopes: [
-        `api://${API_CLIENT_ID}/Solicitudes.Read`,
-        `api://${API_CLIENT_ID}/Solicitudes.Write`,
-        `api://${API_CLIENT_ID}/Catalogo.Read`,
-        `api://${API_CLIENT_ID}/Catalogo.Write`,
-    ],
+    scopes: [`api://${API_CLIENT_ID}/access_as_user`],
 };
 
 export const apiTokenRequest = {
