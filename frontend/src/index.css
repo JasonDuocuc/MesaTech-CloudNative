@@ -354,3 +354,12 @@ select:focus-visible {
 .claims td:last-child {
   word-break: break-all;
 }
+@media (max-width: 640px) {
+  .fila-doble {
+    grid-template-columns: 1fr;
+  }
+  .tabla th,
+  .tabla td {
+    padding: 10px 8px;
+  }
+}
