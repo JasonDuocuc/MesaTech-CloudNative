@@ -15,4 +15,5 @@ public record CurrentUser(String id, String nombre, String email) {
         }
         return new CurrentUser(id, jwt.getClaimAsString("name"), email);
     }
+
 }
