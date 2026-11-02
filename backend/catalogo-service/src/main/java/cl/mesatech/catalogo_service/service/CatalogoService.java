@@ -16,18 +16,31 @@ import cl.mesatech.catalogo_service.exception.ReglaNegocioException;
 import cl.mesatech.catalogo_service.repository.CategoriaRepository;
 import cl.mesatech.catalogo_service.repository.PrioridadRepository;
 
+import tools.jackson.databind.json.JsonMapper;
+
+import cl.mesatech.catalogo_service.entity.OutboxEvento;
+import cl.mesatech.catalogo_service.event.CategoriaCreadaEvento;
+import cl.mesatech.catalogo_service.repository.OutboxEventoRepository;
+
 @Service
 @Transactional
 public class CatalogoService {
 
     private final CategoriaRepository categoriaRepository;
     private final PrioridadRepository prioridadRepository;
+    private final OutboxEventoRepository outboxEventoRepository;
+    private final JsonMapper jsonMapper;
 
     public CatalogoService(
             CategoriaRepository categoriaRepository,
-            PrioridadRepository prioridadRepository) {
+            PrioridadRepository prioridadRepository,
+            OutboxEventoRepository outboxEventoRepository,
+            JsonMapper jsonMapper) {
+
         this.categoriaRepository = categoriaRepository;
         this.prioridadRepository = prioridadRepository;
+        this.outboxEventoRepository = outboxEventoRepository;
+        this.jsonMapper = jsonMapper;
     }
 
     @Transactional(readOnly = true)
@@ -54,8 +67,22 @@ public class CatalogoService {
         validarCategoriaDuplicada(request.nombre(), null);
 
         Categoria categoria = new Categoria(request.nombre().trim());
+        Categoria categoriaGuardada = categoriaRepository.saveAndFlush(categoria);
 
-        return toCategoriaResponse(categoriaRepository.save(categoria));
+        CategoriaCreadaEvento evento = CategoriaCreadaEvento.crear(
+                categoriaGuardada.getId(),
+                categoriaGuardada.getNombre());
+
+        String payload = jsonMapper.writeValueAsString(evento);
+
+        OutboxEvento outboxEvento = new OutboxEvento(
+                evento.eventId(),
+                evento.tipoEvento(),
+                payload);
+
+        outboxEventoRepository.save(outboxEvento);
+
+        return toCategoriaResponse(categoriaGuardada);
     }
 
     public CategoriaResponse actualizarCategoria(Long id, CatalogoItemRequest request) {
