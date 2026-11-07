@@ -1,0 +1,23 @@
+.env
+.env.*
+**/.env
+**/.env.*
+target/
+node_modules/
+
+# Imagenes Docker exportadas
+*.tar
+*.tar.gz
+
+# Archivos locales
+repomix-local.xml
+/exit
+
+# Credenciales y archivos privados
+.env
+.env.*
+!.env.example
+*.pem
+
+# package-lock generado accidentalmente en la raiz
+/package-lock.json
